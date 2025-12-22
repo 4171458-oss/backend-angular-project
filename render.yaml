@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: team-tasks-api
+    env: node
+    plan: free
+    buildCommand: ''
+    startCommand: node server.js
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DB_FILE
+        value: /data/data.sqlite
+      - key: SEED
+        value: 'false'
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
