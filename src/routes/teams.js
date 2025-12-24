@@ -32,8 +32,9 @@ router.post('/:teamId/members', (req, res) => {
   const { teamId } = req.params;
   const { userId, role = 'member' } = req.body || {};
   if (!userId) return res.status(400).json({ error: 'userId required' });
-  const isMember = db.prepare('SELECT 1 FROM team_members WHERE team_id = ? AND user_id = ?').get(teamId, req.user.id);
-  if (!isMember) return res.status(403).json({ error: 'Not a team member' });
+  const membership = db.prepare('SELECT role FROM team_members WHERE team_id = ? AND user_id = ?').get(teamId, req.user.id);
+  if (!membership) return res.status(403).json({ error: 'Not a team member' });
+  if (!['owner','admin'].includes(membership.role)) return res.status(403).json({ error: 'Requires owner/admin role' });
   db.prepare('INSERT OR IGNORE INTO team_members (team_id, user_id, role) VALUES (?,?,?)').run(teamId, userId, role);
   res.status(204).end();
 });

@@ -15,7 +15,4 @@ services:
         value: /data/data.sqlite
       - key: SEED
         value: 'false'
-    disk:
-      name: data
-      mountPath: /data
-      sizeGB: 1
+    

@@ -9,6 +9,13 @@ router.get('/', (req, res) => {
   const { projectId } = req.query;
   let rows;
   if (projectId) {
+    // Ensure requester is a member of the project's team
+    const member = db.prepare(`
+      SELECT 1 FROM team_members tm
+      JOIN projects p ON p.team_id = tm.team_id
+      WHERE p.id = ? AND tm.user_id = ?
+    `).get(projectId, req.user.id);
+    if (!member) return res.status(403).json({ error: 'Not a member of the project team' });
     rows = db.prepare('SELECT * FROM tasks WHERE project_id = ? ORDER BY order_index ASC, created_at DESC').all(projectId);
   } else {
     rows = db.prepare(`
@@ -24,6 +31,13 @@ router.get('/', (req, res) => {
 router.post('/', (req, res) => {
   const { projectId, title, description, status = 'todo', priority = 'normal', assigneeId = null, dueDate = null, orderIndex = 0 } = req.body || {};
   if (!projectId || !title) return res.status(400).json({ error: 'projectId and title required' });
+  // Ensure requester is a member of the project's team
+  const member = db.prepare(`
+    SELECT 1 FROM team_members tm
+    JOIN projects p ON p.team_id = tm.team_id
+    WHERE p.id = ? AND tm.user_id = ?
+  `).get(projectId, req.user.id);
+  if (!member) return res.status(403).json({ error: 'Not a member of the project team' });
   const info = db.prepare(`INSERT INTO tasks (project_id, title, description, status, priority, assignee_id, due_date, order_index)
     VALUES (?,?,?,?,?,?,?,?)`).run(projectId, title, description || null, status, priority, assigneeId, dueDate, orderIndex);
   const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(info.lastInsertRowid);
@@ -36,6 +50,15 @@ router.patch('/:id', (req, res) => {
   const body = req.body || {};
   const fields = [];
   const values = [];
+  // Authorize: task must belong to a project whose team includes the requester
+  const taskRow = db.prepare(`
+    SELECT t.*, p.team_id FROM tasks t
+    JOIN projects p ON p.id = t.project_id
+    WHERE t.id = ?
+  `).get(id);
+  if (!taskRow) return res.status(404).json({ error: 'Task not found' });
+  const membership = db.prepare('SELECT 1 FROM team_members WHERE team_id = ? AND user_id = ?').get(taskRow.team_id, req.user.id);
+  if (!membership) return res.status(403).json({ error: 'Not authorized to modify this task' });
   for (const key of allowed) {
     if (key in body) {
       fields.push(`${key} = ?`);
@@ -52,6 +75,15 @@ router.patch('/:id', (req, res) => {
 
 router.delete('/:id', (req, res) => {
   const { id } = req.params;
+  // Authorize delete similarly
+  const taskRow = db.prepare(`
+    SELECT t.*, p.team_id FROM tasks t
+    JOIN projects p ON p.id = t.project_id
+    WHERE t.id = ?
+  `).get(id);
+  if (!taskRow) return res.status(404).json({ error: 'Task not found' });
+  const membership = db.prepare('SELECT 1 FROM team_members WHERE team_id = ? AND user_id = ?').get(taskRow.team_id, req.user.id);
+  if (!membership) return res.status(403).json({ error: 'Not authorized to delete this task' });
   db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
   res.status(204).end();
 });
