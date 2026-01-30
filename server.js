@@ -15,7 +15,10 @@ import usersRouter from './src/routes/users.js';
 const app = express();
 
 app.use(helmet());
-app.use(cors({ origin: '*'}));
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:4200',
+  credentials: true
+}));
 app.use(express.json());
 app.use(morgan('dev'));
 
