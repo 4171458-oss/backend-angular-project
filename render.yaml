@@ -4,7 +4,7 @@ services:
     env: node
     plan: free
     buildCommand: 'npm ci --omit=dev && npm_config_build_from_source=1 npm rebuild better-sqlite3'
-    startCommand: node seed.js && node server.js
+    startCommand: node server.js
     autoDeploy: true
     envVars:
       - key: NODE_VERSION
@@ -15,6 +15,6 @@ services:
         generateValue: true
       - key: DB_FILE
         value: /tmp/data.sqlite
-      - key: SEED
-        value: 'false'
+      - key: PORT
+        value: 3000
     
