@@ -3,12 +3,12 @@ services:
     name: team-tasks-api
     env: node
     plan: free
-    buildCommand: 'npm ci --omit=dev && npm_config_build_from_source=1 npm rebuild better-sqlite3'
-    startCommand: node seed.js && node server.js
+    buildCommand: 'npm install'
+    startCommand: 'npm start'
     autoDeploy: true
     envVars:
       - key: NODE_VERSION
-        value: 18
+        value: 20
       - key: NODE_ENV
         value: production
       - key: JWT_SECRET
